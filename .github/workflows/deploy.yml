@@ -1,0 +1,27 @@
+name: Deploy bengkelku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy on VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 120s
+          command_timeout: 120s
+          script: |
+            set -e
+            CONTAINER_ID=$(docker ps -q --filter "label=com.docker.compose.project=bengkelku")
+            test -n "$CONTAINER_ID"
+            docker restart "$CONTAINER_ID"
+            sleep 5
+            docker ps --filter "id=$CONTAINER_ID" --format 'table {{.Names}}\t{{.Status}}'
+            curl -fsS https://bengkelku.indonesiadigital.id >/dev/null
